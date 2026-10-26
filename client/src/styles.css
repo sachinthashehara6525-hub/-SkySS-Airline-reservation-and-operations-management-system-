@@ -1,0 +1,72 @@
+:root {
+  --navy: #0b2a5b; --blue: #1565d8; --sky: #dcebfb; --mist: #f3f8fe;
+  --line: #bfd3ea; --bad: #b3261e; --ok: #12805c;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--mist); color: var(--navy); font: 16px/1.5 "Segoe UI", "Avenir Next", system-ui, sans-serif; }
+
+/* header */
+.bar { background: var(--navy); color: #fff; display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; padding: .7rem 1.5rem; }
+.bar h1 { margin: 0; font: 700 1.5rem "Century Gothic", "Segoe UI", sans-serif; letter-spacing: .03em; display: flex; align-items: center; gap: .5rem; }
+nav { display: flex; gap: .25rem; flex-wrap: wrap; }
+nav button { background: none; border: 0; color: #bcd4f2; padding: .5rem .95rem; font: inherit; cursor: pointer; border-radius: 999px; }
+nav button:hover { color: #fff; }
+nav button.on { background: #fff; color: var(--navy); font-weight: 600; }
+
+/* hero */
+.hero { position: relative; overflow: hidden; color: #fff; padding: 2.5rem 1.5rem 5rem;
+  background: linear-gradient(165deg, var(--navy) 0%, var(--blue) 65%, #5aa2f0 100%); }
+.hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 90px; pointer-events: none;
+  background:
+    radial-gradient(ellipse 120px 50px at 12% 100%, var(--mist) 98%, transparent),
+    radial-gradient(ellipse 200px 70px at 38% 105%, var(--mist) 98%, transparent),
+    radial-gradient(ellipse 150px 55px at 64% 100%, var(--mist) 98%, transparent),
+    radial-gradient(ellipse 220px 75px at 90% 105%, var(--mist) 98%, transparent); }
+.hero-in { max-width: 960px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.1fr; gap: 1.5rem; align-items: center; }
+.hero h2 { margin: 0 0 .5rem; font: 700 clamp(1.9rem, 4.5vw, 2.9rem)/1.1 "Century Gothic", "Segoe UI", sans-serif; }
+.hero p { margin: 0; max-width: 28rem; color: #d6e6fb; }
+.trail { width: 100%; height: auto; }
+@media (max-width: 700px) { .hero-in { grid-template-columns: 1fr; } }
+
+main { max-width: 960px; margin: 1.5rem auto; padding: 0 1rem; }
+main.hero-on { margin-top: 0; }
+
+/* controls */
+input, select, button { font: inherit; padding: .6rem .8rem; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--navy); }
+input { flex: 1 1 150px; min-width: 0; }
+button { cursor: pointer; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+.go { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; }
+.go:hover:not(:disabled) { background: var(--navy); border-color: var(--navy); }
+.search, .form { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1rem; }
+.hero-on .search { background: #fff; padding: 1rem; border-radius: 16px; position: relative; z-index: 1;
+  margin-top: -2.5rem; box-shadow: 0 12px 32px rgba(11, 42, 91, .18); }
+
+/* flight cards styled as boarding passes */
+.flight { display: flex; align-items: stretch; background: #fff; border-radius: 14px; margin-bottom: .75rem;
+  overflow: hidden; box-shadow: 0 2px 10px rgba(11, 42, 91, .08); border-left: 6px solid var(--blue); }
+.flight > div:first-child { flex: 1; padding: .9rem 1.2rem; }
+.flight .right { display: flex; flex-direction: column; justify-content: center; text-align: right; font-weight: 700;
+  padding: .9rem 1.2rem; border-left: 2px dashed var(--line); font-size: 1.15rem; }
+.flight small { color: #4b6a93; font-weight: 400; font-size: .85rem; }
+.flight > button { border: 0; border-radius: 0; background: var(--blue); color: #fff; font-weight: 600; padding: 0 1.3rem; }
+.flight > button:hover:not(:disabled) { background: var(--navy); }
+.flight.ops { flex-wrap: wrap; gap: 1rem; padding: 1rem 1.2rem; align-items: center; }
+.flight.ops > div:first-child { padding: 0; min-width: 240px; }
+.flight.ops label { display: flex; flex-direction: column; font-size: .8rem; gap: .2rem; }
+@media (max-width: 600px) { .flight { flex-wrap: wrap; } .flight > button { padding: .7rem; width: 100%; } }
+
+/* seat map shaped like a fuselage */
+.panel { background: #fff; border-radius: 16px; padding: 1.2rem 1.4rem; margin-top: 1rem; box-shadow: 0 2px 10px rgba(11, 42, 91, .08); }
+.panel.ok { border-left: 6px solid var(--ok); }
+.seats { display: inline-block; max-height: 360px; overflow: auto; margin-bottom: 1rem; padding: 3rem 1.6rem 1rem;
+  background: var(--mist); border: 3px solid var(--line); border-radius: 120px 120px 24px 24px; }
+.row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.rn { width: 1.6rem; font-size: .75rem; text-align: right; margin-right: .3rem; color: #4b6a93; }
+.aisle { width: 1.6rem; }
+.seat { width: 2rem; height: 2rem; padding: 0; font-size: .8rem; border-radius: 8px 8px 4px 4px; border-color: var(--blue); color: var(--blue); }
+.seat:hover:not(:disabled) { background: var(--sky); }
+.seat.taken { background: var(--line); border-color: var(--line); color: #7d95b3; }
+.seat.pick { background: var(--blue); color: #fff; }
+.err { color: var(--bad); font-weight: 600; }
