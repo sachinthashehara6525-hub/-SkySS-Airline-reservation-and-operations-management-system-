@@ -10,8 +10,8 @@ function SeatPicker({ flight, onDone }) {
 
   const book = async () => {
     try {
-      const { ref } = await api('/bookings', { method: 'POST', body: { flightId: flight.id, seat, ...form } });
-      onDone(ref);
+      const res = await api('/bookings', { method: 'POST', body: { flightId: flight.id, seat, ...form } });
+      onDone({ ...res, email: form.email });
     } catch (e) {
       setMsg(e.message);
       api(`/flights/${flight.id}/seats`).then(setMap);
@@ -60,7 +60,7 @@ export default function Book() {
     setChosen(null); setRef('');
     setFlights(await api('/flights?' + new URLSearchParams(q)));
   };
-  if (ref) return <section className="panel ok"><h2>Booking confirmed</h2><p>Your reference is <strong>{ref}</strong>. Use it with your email to manage the booking.</p></section>;
+  if (ref) return <section className="panel ok"><h2>Booking confirmed</h2><p>Your reference is <strong>{ref.ref}</strong>.</p><p>{ref.emailSent ? `We sent the confirmation to ${ref.email}. Check your inbox and spam folder.` : 'The confirmation email could not be sent, so please note your reference.'}</p></section>;
   return (
     <>
       <form className="search" onSubmit={search}>

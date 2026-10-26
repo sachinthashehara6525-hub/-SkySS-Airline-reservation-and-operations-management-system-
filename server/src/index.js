@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import crypto from 'node:crypto';
 import { pool, q, init } from './db.js';
+import { sendBookingEmail } from './mailer.js';
 
 const app = express();
 app.use(cors());
@@ -50,14 +51,18 @@ app.post('/api/bookings', h(async (req, res) => {
     if (e.code === '23505') return fail(res, 409, `Seat ${seat} was just taken. Pick another seat.`);
     throw e;
   }
-  res.status(201).json({ ref });
+  const [fl] = await q('SELECT number, origin, dest, depart FROM flights WHERE id = $1', [flightId]);
+  const emailSent = await sendBookingEmail(email.toLowerCase(), { ref, passenger: passenger.trim(), seat, ...fl });
+  res.status(201).json({ ref, emailSent });
 }));
 
 app.get('/api/bookings', h(async (req, res) => {
-  const email = (req.query.email || '').toLowerCase();
-  if (!email) return fail(res, 400, 'Email is required');
-  res.json(await q(`SELECT b.*, f.number, f.origin, f.dest, f.depart, f.gate, f.status AS flight_status
-    FROM bookings b JOIN flights f ON f.id = b.flight_id WHERE b.email = $1 ORDER BY f.depart`, [email]));
+  const email = (req.query.email || '').trim().toLowerCase();
+  const ref = (req.query.ref || '').trim().toUpperCase();
+  if (!email && !ref) return fail(res, 400, 'Enter your email or your booking reference');
+  res.json(await q(`SELECT b.ref, b.passenger, b.seat, b.status, f.number, f.origin, f.dest, f.depart, f.gate, f.status AS flight_status
+    FROM bookings b JOIN flights f ON f.id = b.flight_id
+    WHERE ($1 = '' OR b.email = $1) AND ($2 = '' OR b.ref = $2) ORDER BY f.depart`, [email, ref]));
 }));
 
 app.delete('/api/bookings/:ref', h(async (req, res) => {
