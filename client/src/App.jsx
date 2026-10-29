@@ -1,42 +1,22 @@
 import { useState } from 'react';
+import Home from './Home.jsx';
 import Book from './Book.jsx';
 import Trips from './Trips.jsx';
 import Ops from './Ops.jsx';
+import { PageHead } from './Shared.jsx';
 
-const TABS = { book: ['Book a flight', Book], trips: ['Manage my booking', Trips], ops: ['Operations', Ops] };
-const ARC = 'M10 170 C 150 -10, 380 -10, 560 120';
+const TABS = { home: ['Home', Home], book: ['Book a flight', Book], trips: ['Manage my booking', Trips], ops: ['Operations', Ops] };
+const HEADS = {
+  book: ['Book a flight', 'Pick your route, choose your seat and get your reference by email.', 'book'],
+  trips: ['Manage your booking', 'Find a booking with your email or reference to see the gate, status or cancel it.', 'manage'],
+  ops: ['Operations control', 'Update flight status and gates, assign crew and watch seat sales.'],
+};
 const PLANE = 'M16 0 L-10 -10 L-5 0 L-10 10 Z';
-const reduceMotion = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-function Hero() {
-  return (
-    <section className="hero">
-      <div className="hero-in">
-        <div>
-          <h2>Where are you flying next?</h2>
-          <p>Search flights between Colombo, Singapore and Dubai, then choose your own seat.</p>
-        </div>
-        <svg className="trail" viewBox="0 0 600 205" aria-hidden="true">
-          <path d={ARC} fill="none" stroke="rgba(255,255,255,.75)" strokeWidth="2" strokeDasharray="3 9" strokeLinecap="round" />
-          <circle cx="10" cy="170" r="6" fill="#fff" />
-          <circle cx="560" cy="120" r="6" fill="#fff" />
-          <text x="10" y="197" fill="#fff" fontSize="15" fontWeight="600">CMB</text>
-          <text x="572" y="148" fill="#fff" fontSize="15" fontWeight="600" textAnchor="end">SIN</text>
-          <g transform={reduceMotion ? 'translate(560 120) rotate(36)' : undefined}>
-            <path d={PLANE} fill="#fff" transform="scale(1.6)" />
-            {!reduceMotion && (
-              <animateMotion dur="7s" fill="freeze" rotate="auto" path={ARC}
-                calcMode="spline" keyPoints="0;1" keyTimes="0;1" keySplines="0.3 0 0.2 1" />
-            )}
-          </g>
-        </svg>
-      </div>
-    </section>
-  );
-}
 
 export default function App() {
-  const [tab, setTab] = useState('book');
+  const [tab, setTab] = useState('home');
+  const [prefill, setPrefill] = useState(null);
+  const go = (t, query = null) => { setPrefill(query); setTab(t); window.scrollTo({ top: 0 }); };
   const View = TABS[tab][1];
   return (
     <>
@@ -49,14 +29,16 @@ export default function App() {
         </h1>
         <nav>
           {Object.entries(TABS).map(([k, [label]]) => (
-            <button key={k} className={k === tab ? 'on' : ''} onClick={() => setTab(k)}>{label}</button>
+            <button key={k} className={k === tab ? 'on' : ''} onClick={() => go(k)}>{label}</button>
           ))}
         </nav>
       </header>
-      {tab === 'book' && <Hero />}
-      <main className={tab === 'book' ? 'hero-on' : ''}>
-        <View />
-      </main>
+      {tab === 'home' ? <Home go={go} /> : (
+        <>
+          <PageHead title={HEADS[tab][0]} sub={HEADS[tab][1]} image={HEADS[tab][2]} />
+          <main className="under-head"><View key={JSON.stringify(prefill)} initial={prefill} /></main>
+        </>
+      )}
     </>
   );
 }
