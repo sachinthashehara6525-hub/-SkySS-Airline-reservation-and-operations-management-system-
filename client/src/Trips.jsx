@@ -1,10 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, fmt } from './api.js';
 
 const STEPS = [['SCHEDULED', 'Booked'], ['BOARDING', 'Boarding'], ['DEPARTED', 'Departed'], ['ARRIVED', 'Arrived']];
 const CITY = { CMB: 'Colombo', SIN: 'Singapore', DXB: 'Dubai' };
 
-export default function Trips() {
+// One boarding-pass style ticket. The cancel button shows only when onCancel is given.
+export function Ticket({ b, onCancel }) {
+  const live = b.status === 'CONFIRMED' && b.flight_status !== 'CANCELLED';
+  const at = STEPS.findIndex(([s]) => s === (b.flight_status === 'DELAYED' ? 'SCHEDULED' : b.flight_status));
+  return (
+    <article className="ticket">
+      <div className="main">
+        <small>{b.number} · {fmt(b.depart)} · {b.passenger}</small>
+        <div className="route"><span>{CITY[b.origin] || b.origin}</span><span aria-hidden="true">→</span><span>{CITY[b.dest] || b.dest}</span></div>
+        <small>Seat {b.seat} · Gate {b.gate || 'to be announced'}</small>
+        {b.flight_status === 'DELAYED' && <p><span className="pill delayed">Flight delayed</span></p>}
+        {b.flight_status === 'CANCELLED' && <p><span className="pill cancelled">Flight cancelled</span></p>}
+        {live && (
+          <ol className="steps">
+            {STEPS.map(([s, label], i) => <li key={s} className={i <= at ? 'done' : ''}>{label}</li>)}
+          </ol>
+        )}
+      </div>
+      <div className="stub">
+        <span className="ref">{b.ref}</span>
+        <span className={`pill ${b.status === 'CONFIRMED' ? 'scheduled' : 'cancelled'}`}>{b.status.toLowerCase()}</span>
+        {onCancel && b.status === 'CONFIRMED' && <button onClick={() => onCancel(b.ref)}>Cancel booking</button>}
+      </div>
+    </article>
+  );
+}
+
+export default function Trips({ user }) {
   const [email, setEmail] = useState('');
   const [ref, setRef] = useState('');
   const [rows, setRows] = useState(null);
@@ -17,13 +44,14 @@ export default function Trips() {
     return api('/bookings?' + p).then(setRows).catch((e) => { setRows(null); setMsg(e.message); });
   };
   const cancel = async (r) => {
-    if (!email.trim()) return setMsg('Enter the email used for this booking to cancel it.');
+    if (!email.trim() && !user) return setMsg('Enter the email used for this booking to cancel it.');
     try {
       await api(`/bookings/${r}?email=${encodeURIComponent(email.trim())}`, { method: 'DELETE' });
       setMsg('');
       load();
     } catch (e) { setMsg(e.message); }
   };
+  useEffect(() => { if (user) load(); }, [user]); // signed-in passengers see their own bookings
 
   return (
     <>
@@ -49,31 +77,7 @@ export default function Trips() {
           <p>Your reference is the 6 characters in the email titled Your SkySS booking. Check your spam folder if it is not in your inbox. You can also search with only your email to list all of your bookings.</p>
         </>
       )}
-      {rows?.map((b) => {
-        const live = b.status === 'CONFIRMED' && b.flight_status !== 'CANCELLED';
-        const at = STEPS.findIndex(([s]) => s === (b.flight_status === 'DELAYED' ? 'SCHEDULED' : b.flight_status));
-        return (
-          <article key={b.ref} className="ticket">
-            <div className="main">
-              <small>{b.number} · {fmt(b.depart)} · {b.passenger}</small>
-              <div className="route"><span>{CITY[b.origin] || b.origin}</span><span aria-hidden="true">→</span><span>{CITY[b.dest] || b.dest}</span></div>
-              <small>Seat {b.seat} · Gate {b.gate || 'to be announced'}</small>
-              {b.flight_status === 'DELAYED' && <p><span className="pill delayed">Flight delayed</span></p>}
-              {b.flight_status === 'CANCELLED' && <p><span className="pill cancelled">Flight cancelled</span></p>}
-              {live && (
-                <ol className="steps">
-                  {STEPS.map(([s, label], i) => <li key={s} className={i <= at ? 'done' : ''}>{label}</li>)}
-                </ol>
-              )}
-            </div>
-            <div className="stub">
-              <span className="ref">{b.ref}</span>
-              <span className={`pill ${b.status === 'CONFIRMED' ? 'scheduled' : 'cancelled'}`}>{b.status.toLowerCase()}</span>
-              {b.status === 'CONFIRMED' && <button onClick={() => cancel(b.ref)}>Cancel booking</button>}
-            </div>
-          </article>
-        );
-      })}
+      {rows?.map((b) => <Ticket key={b.ref} b={b} onCancel={cancel} />)}
     </>
   );
 }

@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { api, fmt } from './api.js';
 import { AirportSelect, Photo } from './Shared.jsx';
 
-function SeatPicker({ flight, onDone }) {
+function SeatPicker({ flight, onDone, user }) {
   const [map, setMap] = useState(null);
   const [seat, setSeat] = useState('');
-  const [form, setForm] = useState({ passenger: '', email: '' });
+  const [form, setForm] = useState({ passenger: user?.name || '', email: user?.email || '' });
   const [msg, setMsg] = useState('');
   if (!map) api(`/flights/${flight.id}/seats`).then(setMap);
 
@@ -73,7 +73,7 @@ function Intro({ onPick }) {
   );
 }
 
-export default function Book({ initial }) {
+export default function Book({ initial, user }) {
   const [q, setQ] = useState(initial || { from: '', to: '', date: '' });
   const [flights, setFlights] = useState(null);
   const [chosen, setChosen] = useState(null);
@@ -104,7 +104,7 @@ export default function Book({ initial }) {
           <button onClick={() => setChosen(f)} disabled={f.booked >= f.capacity}>Select</button>
         </article>
       ))}
-      {chosen && <SeatPicker flight={chosen} onDone={setRef} />}
+      {chosen && <SeatPicker flight={chosen} onDone={setRef} user={user} />}
     </>
   );
 }

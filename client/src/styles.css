@@ -145,3 +145,19 @@ progress.occ { display: block; width: 100%; max-width: 320px; height: 8px; margi
 .tip h4 { margin: 0 0 .3rem; font-size: 1.1rem; }
 .tip p { margin: 0; color: #35557f; }
 main .sect-t { margin-top: 2rem; }
+
+/* ---- add flight form ---- */
+.addflight { margin: 0 0 1rem; }
+.addform { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .8rem; margin-top: 1rem; }
+.addform label { display: flex; flex-direction: column; gap: .3rem; font-size: .85rem; font-weight: 600; }
+.addbtn { display: flex; align-items: flex-end; }
+.okmsg { color: var(--ok); font-weight: 600; }
+
+/* ---- accounts ---- */
+.authform { display: grid; gap: .8rem; margin: 1rem 0; }
+.authform label { display: flex; flex-direction: column; gap: .3rem; font-size: .85rem; font-weight: 600; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--blue); text-decoration: underline; cursor: pointer; }
+.who { margin-left: auto; display: flex; align-items: center; gap: .6rem; font-size: .9rem; color: #d6e6fb; }
+.who button { padding: .4rem .9rem; border-radius: 999px; background: transparent; color: #fff; border-color: #fff; }
+/* inputs inside labels must stay one line tall */
+label > input, label > select { flex: none; } 

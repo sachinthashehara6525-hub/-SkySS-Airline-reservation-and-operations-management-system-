@@ -1,7 +1,12 @@
-export async function api(path, { method = 'GET', body, opsKey } = {}) {
+const KEY = 'skyss_token';
+export const getToken = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
+export const setToken = (t) => { try { if (t) localStorage.setItem(KEY, t); else localStorage.removeItem(KEY); } catch { /* storage unavailable */ } };
+
+export async function api(path, { method = 'GET', body } = {}) {
+  const token = getToken();
   const res = await fetch('/api' + path, {
     method,
-    headers: { 'Content-Type': 'application/json', ...(opsKey ? { 'x-ops-key': opsKey } : {}) },
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json();

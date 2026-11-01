@@ -33,6 +33,9 @@ export async function init() {
       seat TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'CONFIRMED', created TIMESTAMPTZ DEFAULT now());
     CREATE UNIQUE INDEX IF NOT EXISTS one_seat ON bookings (flight_id, seat) WHERE status = 'CONFIRMED';
     CREATE INDEX IF NOT EXISTS bookings_email ON bookings (email);
+    CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, name TEXT NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'passenger', created TIMESTAMPTZ DEFAULT now());
+    CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE, expires TIMESTAMPTZ NOT NULL);
+    ALTER TABLE bookings ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id);
   `);
 
   const [{ n }] = await q('SELECT COUNT(*)::int AS n FROM aircraft');

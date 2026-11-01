@@ -4,19 +4,21 @@ import cors from 'cors';
 import crypto from 'node:crypto';
 import { pool, q, init } from './db.js';
 import { sendBookingEmail } from './mailer.js';
+import { attachUser, requireStaff, mountAuth, seedAdmin } from './auth.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(attachUser);
 
-const OPS_KEY = process.env.OPS_KEY || 'dev-ops-key'; // replace with real auth before production
 const STATUSES = ['SCHEDULED', 'BOARDING', 'DEPARTED', 'ARRIVED', 'DELAYED', 'CANCELLED'];
-const ops = (req, res, next) =>
-  req.get('x-ops-key') === OPS_KEY ? next() : res.status(401).json({ error: 'Operations key required' });
+const ops = requireStaff; // operations routes need a signed-in staff account
 const fail = (res, code, error) => res.status(code).json({ error });
 const h = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next); // async errors -> handler below
 
 const BOOKED = "(SELECT COUNT(*)::int FROM bookings b WHERE b.flight_id = f.id AND b.status = 'CONFIRMED')";
+
+mountAuth(app, h, fail);
 
 // ---------- Passenger booking ----------
 app.get('/api/flights', h(async (req, res) => {
@@ -46,7 +48,7 @@ app.post('/api/bookings', h(async (req, res) => {
   if (!m || +m[1] < 1 || +m[1] > f.seat_rows || !f.seat_cols.includes(m[2])) return fail(res, 400, 'Seat does not exist on this aircraft');
   const ref = crypto.randomBytes(3).toString('hex').toUpperCase();
   try {
-    await q('INSERT INTO bookings (ref, flight_id, passenger, email, seat) VALUES ($1,$2,$3,$4,$5)', [ref, flightId, passenger.trim(), email.toLowerCase(), seat]);
+    await q('INSERT INTO bookings (ref, flight_id, passenger, email, seat, user_id) VALUES ($1,$2,$3,$4,$5,$6)', [ref, flightId, passenger.trim(), email.toLowerCase(), seat, req.user?.id ?? null]);
   } catch (e) {
     if (e.code === '23505') return fail(res, 409, `Seat ${seat} was just taken. Pick another seat.`);
     throw e;
@@ -59,15 +61,16 @@ app.post('/api/bookings', h(async (req, res) => {
 app.get('/api/bookings', h(async (req, res) => {
   const email = (req.query.email || '').trim().toLowerCase();
   const ref = (req.query.ref || '').trim().toUpperCase();
-  if (!email && !ref) return fail(res, 400, 'Enter your email or your booking reference');
+  const mine = !email && !ref && req.user ? req.user.id : null; // signed-in passengers see their own bookings
+  if (!email && !ref && !mine) return fail(res, 400, 'Enter your email or your booking reference');
   res.json(await q(`SELECT b.ref, b.passenger, b.seat, b.status, f.number, f.origin, f.dest, f.depart, f.gate, f.status AS flight_status
     FROM bookings b JOIN flights f ON f.id = b.flight_id
-    WHERE ($1 = '' OR b.email = $1) AND ($2 = '' OR b.ref = $2) ORDER BY f.depart`, [email, ref]));
+    WHERE ($1 = '' OR b.email = $1) AND ($2 = '' OR b.ref = $2) AND ($3::int IS NULL OR b.user_id = $3) ORDER BY f.depart`, [email, ref, mine]));
 }));
 
 app.delete('/api/bookings/:ref', h(async (req, res) => {
-  const r = await pool.query("UPDATE bookings SET status = 'CANCELLED' WHERE ref = $1 AND email = $2 AND status = 'CONFIRMED'",
-    [req.params.ref, (req.query.email || '').toLowerCase()]);
+  const r = await pool.query("UPDATE bookings SET status = 'CANCELLED' WHERE ref = $1 AND (email = $2 OR user_id = $3) AND status = 'CONFIRMED'",
+    [req.params.ref, (req.query.email || '').toLowerCase(), req.user?.id ?? null]);
   r.rowCount ? res.json({ ok: true }) : fail(res, 404, 'No active booking matches that reference and email');
 }));
 
@@ -85,6 +88,7 @@ app.post('/api/ops/flights', ops, h(async (req, res) => {
   const { number, origin, dest, depart, arrive, price, aircraftId, gate } = req.body;
   if (!number || !origin || !dest || !depart || !arrive || !aircraftId) return fail(res, 400, 'Missing flight details');
   if (new Date(arrive) <= new Date(depart)) return fail(res, 400, 'Arrival must be after departure');
+  if (origin.toUpperCase() === dest.toUpperCase()) return fail(res, 400, 'Origin and destination must be different');
   const clash = await q("SELECT 1 FROM flights WHERE aircraft_id = $1 AND status <> 'CANCELLED' AND depart < $3 AND arrive > $2", [aircraftId, depart, arrive]);
   if (clash.length) return fail(res, 409, 'That aircraft is already assigned to an overlapping flight');
   const [row] = await q('INSERT INTO flights (number, origin, dest, depart, arrive, price, aircraft_id, gate) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',
@@ -111,6 +115,7 @@ app.post('/api/ops/flights/:id/crew', ops, h(async (req, res) => {
 }));
 
 app.use((err, _req, res, _next) => {
+  if (err.code === '23503') return fail(res, 400, 'That aircraft or flight does not exist');
   if (['22P02', '22007', '22008'].includes(err.code)) return fail(res, 400, 'Invalid input');
   console.error(err);
   fail(res, 500, 'Something went wrong on our side');
@@ -118,6 +123,7 @@ app.use((err, _req, res, _next) => {
 
 try {
   await init();
+  await seedAdmin();
   app.listen(process.env.PORT || 3001, () => console.log('SkySS API on :' + (process.env.PORT || 3001) + ' (PostgreSQL connected)'));
 } catch (e) {
   console.error('Could not start. Check PostgreSQL is running and DATABASE_URL in server/.env is correct.\n', e.message);
