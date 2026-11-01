@@ -63,6 +63,21 @@ export function mountAuth(app, h, fail) {
     if (!u || !(await verifyPassword(req.body.password || '', u.password_hash))) return fail(res, 401, 'Wrong email or password');
     res.json({ token: await startSession(u.id), user: publicUser(u) });
   }));
+  // Tells the sign-in page whether Google sign-in is switched on.
+  app.get('/api/auth/config', (_req, res) => res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID || '' }));
+
+  // Google sign-in: the browser sends Google's signed token, and we check it with Google before trusting it.
+  app.post('/api/auth/google', h(async (req, res) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId || !req.body.credential) return fail(res, 400, 'Google sign-in is not set up');
+    const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(req.body.credential));
+    const g = await r.json().catch(() => ({}));
+    if (!r.ok || g.aud !== clientId || String(g.email_verified) !== 'true' || !g.email) return fail(res, 401, 'Google could not verify this sign-in');
+    const email = g.email.toLowerCase();
+    let [u] = await q('SELECT * FROM users WHERE email = $1', [email]);
+    if (!u) [u] = await q('INSERT INTO users (email, name, password_hash) VALUES ($1, $2, $3) RETURNING *', [email, g.name || email, await hashPassword(crypto.randomBytes(24).toString('hex'))]);
+    res.json({ token: await startSession(u.id), user: publicUser(u) });
+  }));
   app.post('/api/auth/logout', h(async (req, res) => {
     if (bearer(req)) await q('DELETE FROM sessions WHERE token_hash = $1', [sha(bearer(req))]);
     res.json({ ok: true });

@@ -159,5 +159,42 @@ main .sect-t { margin-top: 2rem; }
 .linkbtn { background: none; border: 0; padding: 0; color: var(--blue); text-decoration: underline; cursor: pointer; }
 .who { margin-left: auto; display: flex; align-items: center; gap: .6rem; font-size: .9rem; color: #d6e6fb; }
 .who button { padding: .4rem .9rem; border-radius: 999px; background: transparent; color: #fff; border-color: #fff; }
-/* inputs inside labels must stay one line tall */
-label > input, label > select { flex: none; } 
+
+/* ---- fix: inputs inside labels must stay one line tall ---- */
+label > input, label > select { flex: none; }
+
+/* ---- sign-in animations ---- */
+.launch, .reject { text-align: center; padding: 1rem 0; }
+.ring { position: relative; width: 150px; height: 150px; margin: 0 auto; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--sky); stroke-width: 8; }
+.ring-fg { fill: none; stroke: var(--blue); stroke-width: 8; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(21, 101, 216, .5)); }
+.ring-num { position: absolute; inset: 0; display: grid; place-items: center; font: 700 2.4rem "Century Gothic", "Segoe UI", sans-serif; }
+.ring-num small { font-size: 1rem; margin-left: 2px; align-self: center; }
+.launch-stage { margin: 1rem 0 .3rem; font-weight: 700; font-size: 1.1rem; }
+.launch-hi { margin: .5rem 0 0; font-size: 1.3rem; font-weight: 700; color: var(--blue); animation: pop .5s ease-out; }
+.runway { position: relative; height: 28px; margin: 1rem 0 0; }
+.runway::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed var(--line); }
+.runway-fill { position: absolute; left: 0; top: 50%; height: 3px; margin-top: -1px; border-radius: 2px; background: var(--blue); }
+.plane-run { position: absolute; top: 2px; transform: translateX(-50%); }
+.burst i { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px; border-radius: 50%; background: var(--blue); animation: burst .9s ease-out forwards; }
+.burst i:nth-child(even) { background: #5aa2f0; }
+@keyframes burst { from { transform: rotate(var(--a)) translateY(-60px); opacity: 1; } to { transform: rotate(var(--a)) translateY(-110px); opacity: 0; } }
+@keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.spin { width: 48px; height: 48px; margin: 0 auto; border: 5px solid var(--sky); border-top-color: var(--blue); border-radius: 50%; animation: turn .8s linear infinite; }
+@keyframes turn { to { transform: rotate(360deg); } }
+.reject { color: var(--bad); }
+.x-ring { width: 120px; height: 120px; }
+.rej-circle { fill: none; stroke: var(--bad); stroke-width: 6; stroke-dasharray: 327; stroke-dashoffset: 327; animation: draw .6s forwards; }
+.rej-x { fill: none; stroke: var(--bad); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw .4s .5s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.shake { animation: shake .5s; box-shadow: 0 0 0 3px rgba(179, 38, 30, .35); }
+@keyframes shake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+.gbtn { display: flex; justify-content: center; min-height: 44px; margin: 1rem 0 0; }
+.or { display: flex; align-items: center; gap: .8rem; margin: 1rem 0 0; color: #4b6a93; font-size: .85rem; }
+.or::before, .or::after { content: ""; flex: 1; border-top: 1px solid var(--line); }
+@media (prefers-reduced-motion: reduce) {
+  .shake, .burst i, .launch-hi, .spin { animation: none; }
+  .rej-circle, .rej-x { animation: none; stroke-dashoffset: 0; }
+}
+.phoot .photo { height: 100%; }
